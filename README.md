@@ -25,3 +25,8 @@ Run the following commands to run the server and the client
 - **Server:** The server listens for client connections on a specific port, accepts these connections, reads data sent by the client, processes it, and sends a response back to the client.
 
 - **Client:** The client initiates a connection to the server, sends data through this connection, then waits and receives the processed response from the server to complete the interaction.
+
+## 02. Protocol Parsing
+To send more msg, it's better for the server to take a bunch of requests from the client at the same time. Therefore, we'd better to implement the protocol that can split requests from apart from the TCP byte stream to obtain the distinct content. 
+
+And a good way to split is by declaring **the length of the request** at the beginning of the request.
