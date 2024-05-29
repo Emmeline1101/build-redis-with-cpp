@@ -50,7 +50,7 @@ static int32_t read_full(int fd, char *buf, size_t n) {
     }
     return 0;
 }
-
+// all specified bytes from a buffer are written to a file descriptor
 static int32_t write_all(int fd, const char *buf, size_t n) {
     while (n > 0) {
         ssize_t rv = write(fd, buf, n);
