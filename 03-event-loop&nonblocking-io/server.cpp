@@ -29,47 +29,54 @@ static void die(const char *msg) {
 static void fd_set_nb(int fd) {
     errno = 0;
     int flags = fcntl(fd, F_GETFL, 0);
+     //error checking step
     if (errno) {
         die("fcntl error");
         return;
     }
-
+    // update flag, set it to non-blocking
     flags |= O_NONBLOCK;
 
     errno = 0;
     (void)fcntl(fd, F_SETFL, flags);
-    if (errno) {
+    if (errno) { // check error again
         die("fcntl error");
     }
 }
 
 const size_t k_max_msg = 4096;
 
+// **State Management**
+// Define connection states
 enum {
-    STATE_REQ = 0,
-    STATE_RES = 1,
-    STATE_END = 2,  // mark the connection for deletion
+    STATE_REQ = 0, // State requesting data
+    STATE_RES = 1, // State responding to request
+    STATE_END = 2,  // State end, mark connection for deletion
 };
 
+// **Connection Management**
+// Structure to hold connection related data
 struct Conn {
-    int fd = -1;
-    uint32_t state = 0;     // either STATE_REQ or STATE_RES
-    // buffer for reading
-    size_t rbuf_size = 0;
-    uint8_t rbuf[4 + k_max_msg];
-    // buffer for writing
-    size_t wbuf_size = 0;
-    size_t wbuf_sent = 0;
-    uint8_t wbuf[4 + k_max_msg];
+    int fd = -1;            // file descriptor for the connection
+    uint32_t state = 0;     // current state of the connection
+
+    size_t rbuf_size = 0;   // size of the read buffer
+    uint8_t rbuf[4 + k_max_msg]; // buffer for reading,  byte-sized data
+
+    size_t wbuf_size = 0;   // size of the write buffer
+    size_t wbuf_sent = 0;   // amount of data already sent from the write buffer
+    uint8_t wbuf[4 + k_max_msg];    // buffer for writing
 };
 
+// Associate a connection object with a file descriptor
 static void conn_put(std::vector<Conn *> &fd2conn, struct Conn *conn) {
     if (fd2conn.size() <= (size_t)conn->fd) {
         fd2conn.resize(conn->fd + 1);
     }
     fd2conn[conn->fd] = conn;
 }
-
+// **Connection Handling Functions**
+// Accept a new connection and set it up for non-blocking I/O
 static int32_t accept_new_conn(std::vector<Conn *> &fd2conn, int fd) {
     // accept
     struct sockaddr_in client_addr = {};
@@ -99,7 +106,8 @@ static int32_t accept_new_conn(std::vector<Conn *> &fd2conn, int fd) {
 
 static void state_req(Conn *conn);
 static void state_res(Conn *conn);
-
+// **Buffer Management and Event-driven Architecture**
+// Process the request from the client and prepare a response
 static bool try_one_request(Conn *conn) {
     // try to parse a request from the buffer
     if (conn->rbuf_size < 4) {
@@ -115,7 +123,7 @@ static bool try_one_request(Conn *conn) {
     }
     if (4 + len > conn->rbuf_size) {
         // not enough data in the buffer. Will retry in the next iteration
-        return false;
+        return false; // Wait for complete data
     }
 
     // got one request, do something with it
@@ -225,6 +233,8 @@ static void connection_io(Conn *conn) {
     }
 }
 
+// **Polling and Event Loop**
+// Main event loop to handle incoming connections and data
 int main() {
     int fd = socket(AF_INET, SOCK_STREAM, 0);
     if (fd < 0) {
@@ -238,7 +248,7 @@ int main() {
     struct sockaddr_in addr = {};
     addr.sin_family = AF_INET;
     addr.sin_port = ntohs(1234);
-    addr.sin_addr.s_addr = ntohl(0);    // wildcard address 0.0.0.0
+    addr.sin_addr.s_addr = ntohl(0);    // wildcard address 0.0.0.0; Listen on all interfaces
     int rv = bind(fd, (const sockaddr *)&addr, sizeof(addr));
     if (rv) {
         die("bind()");

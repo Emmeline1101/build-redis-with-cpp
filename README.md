@@ -30,3 +30,8 @@ Run the following commands to run the server and the client
 To send more msg, it's better for the server to take a bunch of requests from the client at the same time. Therefore, we'd better to implement the protocol that can split requests from apart from the TCP byte stream to obtain the distinct content. 
 
 And a good way to split is by declaring **the length of the request** at the beginning of the request.
+
+## 03. Non-blocking mode
+Non-blocking mode is  used here, which is useful when the app needs to react to multiple events without sequential blocking calls. Instead of blocking/waiting, the (read/ write/ connect) operations will do other things without returning an error.
+
+The method is implemented by using the 'fd_set_nb()' function, which sets a socket to non-blocking mode
