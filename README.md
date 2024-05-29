@@ -35,3 +35,45 @@ And a good way to split is by declaring **the length of the request** at the beg
 Non-blocking mode is  used here, which is useful when the app needs to react to multiple events without sequential blocking calls. Instead of blocking/waiting, the (read/ write/ connect) operations will do other things without returning an error.
 
 The method is implemented by using the 'fd_set_nb()' function, which sets a socket to non-blocking mode
+
+## 04. Basic Server: get, set, del  
+This iteration of the code adds a simple protocol handling mechanism, extending the server's functionality to process specific commands and manage a key-value store. 
+### How to run
+```shell
+# Compile the server
+gcc server.c -o server
+
+# Compile the client
+gcc client.c -o client
+
+# Run the server
+./server
+
+# Run the client with different commands
+
+# Retrieve value of key 'k'
+./client get k
+# Expected output if 'k' does not exist: "server says: [2]"
+
+# Set the value of key 'k' to 'v'
+./client set k v
+# Expected output: "server says: [0]"
+
+# Retrieve value of key 'k' again
+./client get k
+# Expected output: "server says: [0] v"
+
+# Delete the key 'k'
+./client del k
+# Expected output: "server says: [0]"
+
+# Try to get the deleted key 'k'
+./client get k
+# Expected output: "server says: [2]"
+
+# Send an unrecognized command
+./client aaa bbb
+# Expected output: "server says: [1] Unknown cmd"
+
+
+```
