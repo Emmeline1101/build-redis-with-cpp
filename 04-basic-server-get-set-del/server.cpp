@@ -272,24 +272,28 @@ static bool try_one_request(Conn *conn) {
     return (conn->state == STATE_REQ);
 }
 
+// Tries to fill the read buffer for a given connection
 static bool try_fill_buffer(Conn *conn) {
-    // try to fill the buffer
+    // Assert to ensure we do not overflow the buffer
     assert(conn->rbuf_size < sizeof(conn->rbuf));
     ssize_t rv = 0;
     do {
         size_t cap = sizeof(conn->rbuf) - conn->rbuf_size;
         rv = read(conn->fd, &conn->rbuf[conn->rbuf_size], cap);
-    } while (rv < 0 && errno == EINTR);
+    } while (rv < 0 && errno == EINTR);  // Continue reading if interrupted by a signal
     if (rv < 0 && errno == EAGAIN) {
+        // Non-blocking read has no data available
         // got EAGAIN, stop.
         return false;
     }
     if (rv < 0) {
+        // Read error, mark connection to end and log error
         msg("read() error");
         conn->state = STATE_END;
         return false;
     }
     if (rv == 0) {
+        // Connection closed by client
         if (conn->rbuf_size > 0) {
             msg("unexpected EOF");
         } else {
@@ -298,39 +302,47 @@ static bool try_fill_buffer(Conn *conn) {
         conn->state = STATE_END;
         return false;
     }
-
+     // Successfully read data, increase buffer size
     conn->rbuf_size += (size_t)rv;
     assert(conn->rbuf_size <= sizeof(conn->rbuf));
 
     // Try to process requests one by one.
     // Why is there a loop? Please read the explanation of "pipelining".
+    // Process all requests that can be fully read from the buffer
     while (try_one_request(conn)) {}
+    // Return true if the state is still STATE_REQ, indicating more data can be read
     return (conn->state == STATE_REQ);
 }
 
+// Handles incoming data for connections in the STATE_REQ state
 static void state_req(Conn *conn) {
     while (try_fill_buffer(conn)) {}
 }
 
+// Attempts to flush the write buffer to the socket
 static bool try_flush_buffer(Conn *conn) {
     ssize_t rv = 0;
     do {
         size_t remain = conn->wbuf_size - conn->wbuf_sent;
         rv = write(conn->fd, &conn->wbuf[conn->wbuf_sent], remain);
-    } while (rv < 0 && errno == EINTR);
+    } while (rv < 0 && errno == EINTR); // Retry if interrupted
     if (rv < 0 && errno == EAGAIN) {
         // got EAGAIN, stop.
+        // Non-blocking write cannot proceed yet
         return false;
     }
     if (rv < 0) {
+        // Write error, log and change state to end
         msg("write() error");
         conn->state = STATE_END;
         return false;
     }
+     // Update how much has been sent
     conn->wbuf_sent += (size_t)rv;
     assert(conn->wbuf_sent <= conn->wbuf_size);
     if (conn->wbuf_sent == conn->wbuf_size) {
         // response was fully sent, change state back
+        // All data has been sent; reset buffer and change state
         conn->state = STATE_REQ;
         conn->wbuf_sent = 0;
         conn->wbuf_size = 0;
@@ -340,16 +352,19 @@ static bool try_flush_buffer(Conn *conn) {
     return true;
 }
 
+// Handles outgoing data for connections in the STATE_RES state
 static void state_res(Conn *conn) {
     while (try_flush_buffer(conn)) {}
 }
 
+// Main function to handle I/O operations based on connection state
 static void connection_io(Conn *conn) {
     if (conn->state == STATE_REQ) {
         state_req(conn);
     } else if (conn->state == STATE_RES) {
         state_res(conn);
     } else {
+        // This state should never be reached, indicates a programming error
         assert(0);  // not expected
     }
 }
@@ -361,6 +376,7 @@ int main() {
     }
 
     int val = 1;
+    // Allows the socket to be bound to an address that is already in use
     setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val));
 
     // bind
@@ -374,7 +390,7 @@ int main() {
     }
 
     // listen
-    rv = listen(fd, SOMAXCONN);
+    rv = listen(fd, SOMAXCONN); // Start listening for client connections
     if (rv) {
         die("listen()");
     }
