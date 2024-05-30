@@ -40,16 +40,15 @@ The method is implemented by using the 'fd_set_nb()' function, which sets a sock
 This iteration of the code adds a simple protocol handling mechanism, extending the server's functionality to process specific commands and manage a key-value store. 
 ### How to run
 ```shell
-# Compile the server
-gcc server.c -o server
+# Compile the server & client
 
-# Compile the client
-gcc client.c -o client
+g++ -std=c++11 server.cpp -o server
+g++ -std=c++11 client.cpp -o client
 
 # Run the server
 ./server
 
-# Run the client with different commands
+# Run the client with different commands; [2] - error, [0] - ok
 
 # Retrieve value of key 'k'
 ./client get k
@@ -76,4 +75,28 @@ gcc client.c -o client
 # Expected output: "server says: [1] Unknown cmd"
 
 
+```
+
+## 05. Hashtable
+
+The improvements allow Redis to scale effectively, handling hundreds of GBs with minimal latency impact.  
+
+Redis is significantly enhanced by utilizing two primary classes of hashtables: open addressing and chaining. Open addressing is preferred for its CPU cache efficiency and lower memory overhead, while chaining handles collisions better, especially with intrusive data structures that reduce memory allocations.   
+
+This dual approach allows Redis to efficiently manage latency and memory usage even under heavy loads, ensuring stable performance through thoughtful handling of worst-case scenarios and avoiding the complexity of pointer indirection in hot paths.   
+
+### why use C here?
+C offers low-level access to memory and minimal abstraction overhead
+
+### structure of files
+1. **hashtable.h**: Defines the structures and functions for the hash table implementation.  
+2. **hashtable.cpp**: Contains the implementation of the hash table functions such as initialization, insertion, lookup, and deletion.  
+3. **server.cpp**: Uses the hash table to create a server that can handle basic commands like set, get, and del to manipulate key-value pairs stored in the hash table.  
+
+### How to Run?
+```shell
+# Compile the code
+g++ -std=c++11 -o server server.cpp hashtable.cpp
+# Run the server
+./server
 ```
