@@ -2,6 +2,10 @@
 Redis is a memory database, which is a highly performant database that can proceed with large data sets.  
 This project follows the guidelines from the website: build-your-own.org.  
 The project uses CPP and C programming languages to build Redis. 
+
+# Demo
+To see more details, please refer to the `img` (`build-redis-with-cpp/img/`) folder. 
+
 # How to Run it
 ### STEP1
 Save the code from the client side and server side, and name it as "client.c" and "server.c".
@@ -200,5 +204,44 @@ g++ -std=c++11 -o client client.cpp
 ./client ZQUERY myset 1 "hello" 0 10
 ./client ZREM myset "hello"
 ./client ZSCORE myset "world"
+
+```
+
+## 09. The Event Loop and Timers
+For this step, server management is enhanced by introducing timeouts and timers to efficiently handle idle TCP connections, which is critical for maintaining network application stability.  
+
+Modifications to the event loop integrate a timeout mechanism that adjusts based on the closest timer, ensuring timely response to inactive connections. The timers are managed using a simple linked list that optimizes for quick updates and maintenance, streamlining the process by appending renewed timers to the end of the list. This approach minimizes resource wastage and boosts server performance by automatically disconnecting idle connections.
+
+### File Structure
+**avl.cpp** - Contains the implementation of AVL tree operations such as insertion, deletion, and balancing. This file includes the core functionality for maintaining the AVL tree structure used in the sorted set.
+
+**avl.h** - Header file for avl.cpp, declaring the AVL tree node structure and associated functions, providing the interface for AVL tree operations.
+
+**client.cpp** - Implements the client-side logic for interacting with the server, sending commands and processing responses related to the sorted set operations.
+
+**common.h** - Likely contains common definitions and utility functions used across multiple files in the project, such as error handling or specific constants.
+
+**hashtable.cpp** - Implements the hashtable used in managing indexes within the sorted set, particularly for quick access by key names.
+
+**hashtable.h** - Header file for hashtable.cpp, declaring structures and functions for the hashtable operations.
+
+**server.cpp** - Contains the main server logic handling incoming client requests, integrating AVL tree and hashtable operations to perform sorted set commands.
+
+**zset.cpp** - Provides the implementation of sorted set specific operations such as adding, removing, and querying elements based on scores and other criteria.
+
+**zset.h** - Header file for zset.cpp, declaring the structures and functions specific to the sorted set operations.
+
+**test_cmds.py** - A Python script used for automated testing of server commands, verifying that sorted set operations perform as expected.
+
+**test_offset.cpp** - Contains tests specifically designed to verify the correctness of offset calculations within the AVL tree, ensuring that the tree maintains correct order statistics.
+
+
+### How to Run
+```shell
+# compile the files
+g++ -std=c++11 -o server server.cpp avl.cpp hashtable.cpp zset.cpp
+
+# Run the server
+./server
 
 ```
