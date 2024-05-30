@@ -165,3 +165,40 @@ g++ -std=c++11 -o test-avl avl.cpp test-avl.cpp
 ./test-avl
 
 ```
+
+## 08. Sorted Set From AVL Tree  
+A sorted set data structure using AVL trees is implemented. By introducing a complex data type, operations can be handled efficiently based on both score and value. 
+
+### Improvements
+
+1. **Enhanced Data Structures**: Using AVL trees provides a robust foundation for implementing sorted sets, which are more complex than the simple key-value or hashmap data structures explored in earlier chapters.  
+2. **Efficient Querying**: The introduction of the ZQUERY command and AVL tree's balancing features allows for efficient range queries and rank calculations, which are critical for high-performance database operations.  
+3. **Intrusive Data Structures**: Reduces memory overhead and increases performance by avoiding separate allocations for nodes that are part of multiple data structures.  
+
+### File Structure
+1. **AVL Tree (avl.cpp, avl.h)** - Implements the AVL tree, a self-balancing binary search tree, ensuring that operations like insertions, deletions, and lookups remain efficient (O(log n) time complexity). This structure supports the sorted set operations by maintaining elements in a sorted order based on score.  
+
+2. **Sorted Set (zset.cpp, zset.h)** - Introduces a sorted set implementation using AVL trees. This involves managing a dual index system:  
+
+- Hashmap index for fast access by name.  
+- AVL tree index for ordered traversal by score.  
+3. **Client and Server Files (client.cpp, server.cpp)** - Handle the network interaction and command processing, enabling testing and interaction with the sorted set operations through a simplified command interface like ZADD, ZREM, ZQUERY, etc.  
+
+4. **Test Files (test_cmds.py, test_offset.cpp)** - Provide automated testing for command processing and AVL tree operations. This ensures the sorted set operations work correctly and efficiently across various scenarios.
+
+5. **Common Utilities (common.h)** - Contains utility functions and definitions used across different parts of the project.
+
+### How to Run
+```shell
+g++ -std=c++11 -o server server.cpp avl.cpp hashtable.cpp zset.cpp
+g++ -std=c++11 -o client client.cpp
+
+./server
+
+./client ZADD myset 1 "hello"
+./client ZADD myset 2 "world"
+./client ZQUERY myset 1 "hello" 0 10
+./client ZREM myset "hello"
+./client ZSCORE myset "world"
+
+```
