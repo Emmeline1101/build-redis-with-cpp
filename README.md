@@ -93,10 +93,64 @@ C offers low-level access to memory and minimal abstraction overhead
 2. **hashtable.cpp**: Contains the implementation of the hash table functions such as initialization, insertion, lookup, and deletion.  
 3. **server.cpp**: Uses the hash table to create a server that can handle basic commands like set, get, and del to manipulate key-value pairs stored in the hash table.  
 
-### How to Run?
+### how to Run?
 ```shell
 # Compile the code
 g++ -std=c++11 -o server server.cpp hashtable.cpp
 # Run the server
 ./server
+```
+
+## 06. Data Serialization
+A robust serialization protocol is made to enhance the server's protocol to handle more complex data types and efficiently manage command responses. Below is a more detailed explanation:  
+1. **Enhanced Data Types**: The introduction of a serialization protocol supports five primary data types: nil, error messages, strings, integers, and arrays, which  allows Redis to handle more complex data structures and responses
+2. **Serialization Protocol**: The serialization approach adopted is the Type-Length-Value (TLV) format, which facilitates the encoding of not only flat data but also nested structures.
+data structures and responses
+3. **Command Response Flexibility**: By leveraging the serialization protocol, Redis can now return detailed and structured responses based on the command executed.  
+### how to  run
+```shell
+# Compile the server
+g++ -std=c++11 -o server server.cpp hashtable.cpp
+
+# Compile the client
+g++ -std=c++11 -o client client.cpp
+
+# start server
+./server
+
+# Testing an unknown command
+./client asdf
+# Output: (err) 1 Unknown cmd
+
+# Attempt to get a non-existing key
+./client get asdf
+# Output: (nil)
+
+# Set a key 'k' with the value 'v'
+./client set k v
+# Output: (nil) - assuming your setting doesn't give a confirmation message
+
+# Get the value of key 'k'
+./client get k
+# Output: (str) v
+
+# List all keys
+./client keys
+# Output: (arr) len=1
+#         (str) k
+#         (arr) end
+
+# Delete the key 'k'
+./client del k
+# Output: (int) 1
+
+# Try to delete 'k' again, which doesn't exist anymore
+./client del k
+# Output: (int) 0
+
+# List keys after deletion
+./client keys
+# Output: (arr) len=0
+#         (arr) end
+
 ```
