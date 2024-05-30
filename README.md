@@ -239,9 +239,21 @@ Modifications to the event loop integrate a timeout mechanism that adjusts based
 ### How to Run
 ```shell
 # compile the files
-g++ -std=c++11 -o server server.cpp avl.cpp hashtable.cpp zset.cpp
+g++ -std=c++11 -o server server.cpp avl.cpp hashtable.cpp heap.cpp zset.cpp
 
 # Run the server
 ./server
 
+g++ -std=c++11 -o test_heap test_heap.cpp heap.cpp
+./test_heap
+
 ```
+## 10. The Heap Data Structure & TTL (time to live)
+Heap data structures is introduced to handle timeouts and TTLs (time to live) for cached data, which is crucial for efficiently managing the expiration of data in a cache server like Redis. This implementation allows for more flexible and variable timer durations compared to the fixed-value timers used in the linked lists of the previous setup.### How to Run
+
+```shell
+# compile the files
+g++ -std=c++11 -o server server.cpp avl.cpp hashtable.cpp heap.cpp zset.cpp
+
+# Run the server
+./server
