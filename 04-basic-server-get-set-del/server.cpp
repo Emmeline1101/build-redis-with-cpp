@@ -14,17 +14,19 @@
 #include <vector>
 #include <map>
 
-
+// Print a simple message to standard error
 static void msg(const char *msg) {
     fprintf(stderr, "%s\n", msg);
 }
 
+// Print an error message and abort the program
 static void die(const char *msg) {
     int err = errno;
     fprintf(stderr, "[%d] %s\n", err, msg);
     abort();
 }
 
+// Set a file descriptor (socket) to non-blocking mode
 static void fd_set_nb(int fd) {
     errno = 0;
     int flags = fcntl(fd, F_GETFL, 0);
@@ -42,26 +44,29 @@ static void fd_set_nb(int fd) {
     }
 }
 
-const size_t k_max_msg = 4096;
+const size_t k_max_msg = 4096; // Maximum message size
 
+// Connection states
 enum {
-    STATE_REQ = 0,
-    STATE_RES = 1,
+    STATE_REQ = 0,  // Ready to read a new request
+    STATE_RES = 1,  // Ready to send a response
     STATE_END = 2,  // mark the connection for deletion
 };
 
+// Connection structure with buffers and state
 struct Conn {
-    int fd = -1;
-    uint32_t state = 0;     // either STATE_REQ or STATE_RES
+    int fd = -1;            // File descriptor for the connection
+    uint32_t state = 0;     // either STATE_REQ or STATE_RES; Current state of the connection
     // buffer for reading
-    size_t rbuf_size = 0;
-    uint8_t rbuf[4 + k_max_msg];
+    size_t rbuf_size = 0;   // Size of the read buffer
+    uint8_t rbuf[4 + k_max_msg];     // Read buffer
     // buffer for writing
-    size_t wbuf_size = 0;
-    size_t wbuf_sent = 0;
-    uint8_t wbuf[4 + k_max_msg];
+    size_t wbuf_size = 0;   // Size of the write buffer
+    size_t wbuf_sent = 0;   // How much of the write buffer has been sent
+    uint8_t wbuf[4 + k_max_msg];    // Write buffer
 };
 
+// Store connection object in a vector indexed by file descriptor
 static void conn_put(std::vector<Conn *> &fd2conn, struct Conn *conn) {
     if (fd2conn.size() <= (size_t)conn->fd) {
         fd2conn.resize(conn->fd + 1);
@@ -69,6 +74,7 @@ static void conn_put(std::vector<Conn *> &fd2conn, struct Conn *conn) {
     fd2conn[conn->fd] = conn;
 }
 
+// Accept a new connection, set it to non-blocking, and store it
 static int32_t accept_new_conn(std::vector<Conn *> &fd2conn, int fd) {
     // accept
     struct sockaddr_in client_addr = {};
@@ -96,11 +102,13 @@ static int32_t accept_new_conn(std::vector<Conn *> &fd2conn, int fd) {
     return 0;
 }
 
+// Function declarations for handling request states
 static void state_req(Conn *conn);
 static void state_res(Conn *conn);
 
-const size_t k_max_args = 1024;
+const size_t k_max_args = 1024; // Maximum number of arguments in a request
 
+// Parse a request from binary format into a vector of strings
 static int32_t parse_req(
     const uint8_t *data, size_t len, std::vector<std::string> &out)
 {
@@ -133,16 +141,19 @@ static int32_t parse_req(
     return 0;
 }
 
+// Response codes
 enum {
     RES_OK = 0,
     RES_ERR = 1,
-    RES_NX = 2,
+    RES_NX = 2, // Not found
 };
 
 // The data structure for the key space. This is just a placeholder
+// Global key-value store (map)
 // until we implement a hashtable in the next chapter.
 static std::map<std::string, std::string> g_map;
 
+// Command functions for 'get', 'set', and 'del'
 static uint32_t do_get(
     const std::vector<std::string> &cmd, uint8_t *res, uint32_t *reslen)
 {
@@ -174,10 +185,12 @@ static uint32_t do_del(
     return RES_OK;
 }
 
+// Check if a command matches a given word
 static bool cmd_is(const std::string &word, const char *cmd) {
     return 0 == strcasecmp(word.c_str(), cmd);
 }
 
+// Process a request and generate an appropriate response
 static int32_t do_request(
     const uint8_t *req, uint32_t reqlen,
     uint32_t *rescode, uint8_t *res, uint32_t *reslen)
@@ -204,7 +217,9 @@ static int32_t do_request(
     return 0;
 }
 
+// Try to handle one request from the connection's buffer
 static bool try_one_request(Conn *conn) {
+    // similar structure to do_request but checks buffer sizes and manages connection state
     // try to parse a request from the buffer
     if (conn->rbuf_size < 4) {
         // not enough data in the buffer. Will retry in the next iteration
@@ -233,7 +248,7 @@ static bool try_one_request(Conn *conn) {
         conn->state = STATE_END;
         return false;
     }
-    wlen += 4;
+    wlen += 4;  // Adjust for the response code prefix
     memcpy(&conn->wbuf[0], &wlen, 4);
     memcpy(&conn->wbuf[4], &rescode, 4);
     conn->wbuf_size = 4 + wlen;
@@ -241,6 +256,7 @@ static bool try_one_request(Conn *conn) {
     // remove the request from the buffer.
     // note: frequent memmove is inefficient.
     // note: need better handling for production code.
+    // Shift the remaining data in the read buffer
     size_t remain = conn->rbuf_size - 4 - len;
     if (remain) {
         memmove(conn->rbuf, &conn->rbuf[4 + len], remain);
@@ -248,6 +264,7 @@ static bool try_one_request(Conn *conn) {
     conn->rbuf_size = remain;
 
     // change state
+    // Transition to response state
     conn->state = STATE_RES;
     state_res(conn);
 
