@@ -144,7 +144,7 @@ g++ -std=c++11 -o client client.cpp
 ./client del k
 # Output: (int) 1
 
-# Try to delete 'k' again, which doesn't exist anymore
+# Try to delete 'k' again, which doesn't exist anymore, 0 means no key is deleted
 ./client del k
 # Output: (int) 0
 
@@ -152,5 +152,16 @@ g++ -std=c++11 -o client client.cpp
 ./client keys
 # Output: (arr) len=0
 #         (arr) end
+
+```
+
+## 07. AVL
+AVL trees is used to implement the sorted sets in Redis, by utilizing its balancing mechanism. The focus is on ensuring efficient data access and manipulation within Redis, with AVL trees providing a self-balancing binary search tree structure that maintains sorted data in a way that all insert, delete, and search operations are in logarithmic time.
+
+### how to run
+```shell
+g++ -std=c++11 -o test-avl avl.cpp test-avl.cpp
+
+./test-avl
 
 ```
