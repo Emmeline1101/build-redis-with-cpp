@@ -192,20 +192,6 @@ A sorted set data structure using AVL trees is implemented. By introducing a com
 
 5. **Common Utilities (common.h)** - Contains utility functions and definitions used across different parts of the project.
 
-### How to Run
-```shell
-g++ -std=c++11 -o server server.cpp avl.cpp hashtable.cpp zset.cpp
-g++ -std=c++11 -o client client.cpp
-
-./server
-
-./client ZADD myset 1 "hello"
-./client ZADD myset 2 "world"
-./client ZQUERY myset 1 "hello" 0 10
-./client ZREM myset "hello"
-./client ZSCORE myset "world"
-
-```
 
 ## 09. The Event Loop and Timers
 For this step, server management is enhanced by introducing timeouts and timers to efficiently handle idle TCP connections, which is critical for maintaining network application stability.  
@@ -236,24 +222,37 @@ Modifications to the event loop integrate a timeout mechanism that adjusts based
 **test_offset.cpp** - Contains tests specifically designed to verify the correctness of offset calculations within the AVL tree, ensuring that the tree maintains correct order statistics.
 
 
-### How to Run
-```shell
-# compile the files
-g++ -std=c++11 -o server server.cpp avl.cpp hashtable.cpp heap.cpp zset.cpp
-
-# Run the server
-./server
-
-g++ -std=c++11 -o test_heap test_heap.cpp heap.cpp
-./test_heap
-
-```
 ## 10. The Heap Data Structure & TTL (time to live)
 Heap data structures is introduced to handle timeouts and TTLs (time to live) for cached data, which is crucial for efficiently managing the expiration of data in a cache server like Redis. This implementation allows for more flexible and variable timer durations compared to the fixed-value timers used in the linked lists of the previous setup.### How to Run
 
-```shell
-# compile the files
-g++ -std=c++11 -o server server.cpp avl.cpp hashtable.cpp heap.cpp zset.cpp
+## 11. Thread Pool & Asynchronous Tasks
+In this chapter, the focus is on addressing the stalling issue caused by the time-consuming deletion of large sorted sets in the server. This problem is tackled by implementing a thread pool to offload such tasks away from the main thread, ensuring that the server remains responsive.
 
-# Run the server
-./server
+**Key Implementations:**
+
+1. **Thread Pool Introduction**: A thread pool is introduced, consisting of multiple threads that consume tasks from a queue and execute them. This approach allows the server to manage intensive tasks without blocking the main server operations.
+
+2. **Use of pthread APIs**: The implementation utilizes `pthread_mutex_t` and `pthread_cond_t` to manage access to the queue and synchronize the producer (server) and consumer (worker threads) activities. This ensures that tasks are handed off efficiently and workers are only active when there are tasks to process.
+
+3. **Efficient Task Management**: The server enqueues tasks related to the destruction of large sorted sets into the thread pool. This separation of intensive tasks from the main server loop prevents server stalls and improves overall responsiveness.
+
+4. **Integration into Server Architecture**: The thread pool is fully integrated into the server's architecture, with modifications to the event loop and the task handling mechanisms to accommodate asynchronous task processing.
+
+This setup not only enhances the server's performance by preventing stalls during heavy operations but also demonstrates a practical application of multi-threading in networked applications, specifically for operations that are too costly to run synchronously within the main server loop.
+
+### How to Run
+```shell
+g++ -std=c++11 -pthread -o redis_server server.cpp avl.cpp hashtable.cpp heap.cpp thread_pool.cpp zset.cpp
+
+./redis_server
+
+# connect to server
+nc localhost 1234
+set key value
+get key
+del key
+
+# Or use py test script
+python redis_test.py
+
+```
