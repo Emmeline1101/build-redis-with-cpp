@@ -4,7 +4,11 @@ This project follows the guidelines from the website: build-your-own.org.
 The project uses CPP and C programming languages to build Redis. 
 
 # Demo
-To see more details, please refer to the `img` (`build-redis-with-cpp/img/`) folder. 
+To see more details, please refer to the `img` (`build-redis-with-cpp/img/`) folder.
+
+![Client Demo](https://github.com/Emmeline1101/build-redis-with-cpp/blob/main/img/08-client.png)
+![Server Demo](https://github.com/Emmeline1101/build-redis-with-cpp/blob/main/img/08-server.png)
+
 
 # How to Run it
 ### STEP1
